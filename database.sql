@@ -22,15 +22,37 @@ CREATE TABLE IF NOT EXISTS users (
 -- Posts table
 CREATE TABLE IF NOT EXISTS posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    scout_id INT NOT NULL,
     title VARCHAR(200) NOT NULL,
     short_history TEXT,
     country VARCHAR(100) NOT NULL,
     genre VARCHAR(50) NOT NULL,
     cost_level ENUM('free', 'low', 'medium', 'high') NOT NULL DEFAULT 'free',
     travel_medium_info TEXT,
+    image VARCHAR(255) DEFAULT NULL,
     status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (scout_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Post Requests table (for scout submissions)
+CREATE TABLE IF NOT EXISTS post_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    original_post_id INT DEFAULT NULL,
+    title VARCHAR(200) NOT NULL,
+    short_history TEXT,
+    country VARCHAR(100) NOT NULL,
+    genre VARCHAR(50) NOT NULL,
+    cost_level ENUM('free', 'low', 'medium', 'high') NOT NULL DEFAULT 'free',
+    travel_medium_info TEXT,
+    image VARCHAR(255) DEFAULT NULL,
+    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (original_post_id) REFERENCES posts(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- Wishlist table

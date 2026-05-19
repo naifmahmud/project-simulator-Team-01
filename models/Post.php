@@ -1,157 +1,137 @@
 <?php
 // ================================================================
 // Post Model - Database operations for posts table
-// Uses procedural mysqli with prepared statements
+// Uses PDO with prepared statements
 // ================================================================
 
-/* ------------------- Post ------------------- */
-function findPostById($conn, $id) {
-    $stmt = mysqli_prepare($conn, "
-        SELECT p.*
-        FROM posts p
-        WHERE p.id = ?
-    ");
-    mysqli_stmt_bind_param($stmt, 'i', $id);
-    mysqli_stmt_execute($stmt);
-    $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-    mysqli_stmt_close($stmt);
-    return $row;
+/**
+ * Find post by ID
+ */
+function findPostById($pdo, $id) {
+    $stmt = $pdo->prepare("SELECT * FROM posts WHERE id = ?");
+    $stmt->execute([$id]);
+    return $stmt->fetch();
 }
 
-function getLatestApproved($conn, $limit = 6) {
-    $stmt = mysqli_prepare($conn, "
-        SELECT id, title, short_history, country, genre, cost_level, status, created_at
-        FROM posts
-        WHERE status = 'approved'
-        ORDER BY created_at DESC
-        LIMIT ?
-    ");
-    mysqli_stmt_bind_param($stmt, 'i', $limit);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    return mysqli_fetch_all($result, MYSQLI_ASSOC);
+/**
+ * Get latest approved posts
+ */
+function getLatestApprovedPosts($pdo, $limit = 6) {
+    $stmt = $pdo->prepare("SELECT id, title, short_history, country, genre, cost_level, status, created_at FROM posts WHERE status = 'approved' ORDER BY created_at DESC LIMIT ?");
+    $stmt->execute([$limit]);
+    return $stmt->fetchAll();
 }
 
-function getAllApproved($conn) {
-    $result = mysqli_query($conn, "
-        SELECT id, title, short_history, country, genre, cost_level, status, created_at
-        FROM posts
-        WHERE status = 'approved'
-        ORDER BY created_at DESC
-    ");
-    return mysqli_fetch_all($result, MYSQLI_ASSOC);
+/**
+ * Get all approved posts
+ */
+function getAllApprovedPosts($pdo) {
+    $stmt = $pdo->prepare("SELECT id, title, short_history, country, genre, cost_level, status, created_at FROM posts WHERE status = 'approved' ORDER BY created_at DESC");
+    $stmt->execute();
+    return $stmt->fetchAll();
 }
 
-function getPostsByUserId($conn, $userId) {
-    $stmt = mysqli_prepare($conn, "
-        SELECT * FROM posts WHERE id = ?
-        ORDER BY created_at DESC
-    ");
-    mysqli_stmt_bind_param($stmt, 'i', $userId);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    return mysqli_fetch_all($result, MYSQLI_ASSOC);
+/**
+ * Get posts by user
+ */
+function getPostsByUserId($pdo, $userId) {
+    $stmt = $pdo->prepare("SELECT * FROM posts WHERE id = ? ORDER BY created_at DESC");
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll();
 }
 
-function getPostsByStatus($conn, $status) {
-    $stmt = mysqli_prepare($conn, "
-        SELECT p.*
-        FROM posts p
-        WHERE p.status = ?
-        ORDER BY p.created_at DESC
-    ");
-    mysqli_stmt_bind_param($stmt, 's', $status);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    return mysqli_fetch_all($result, MYSQLI_ASSOC);
+/**
+ * Get posts by status
+ */
+function getPostsByStatus($pdo, $status) {
+    $stmt = $pdo->prepare("SELECT p.* FROM posts p WHERE p.status = ? ORDER BY p.created_at DESC");
+    $stmt->execute([$status]);
+    return $stmt->fetchAll();
 }
 
-function createPost($conn, $title, $shortHistory, $country, $genre, $costLevel, $travelMediumInfo) {
-    $stmt = mysqli_prepare($conn, "
-        INSERT INTO posts (title, short_history, country, genre, cost_level, travel_medium_info, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())
-    ");
-    mysqli_stmt_bind_param($stmt, 'ssssss', $title, $shortHistory, $country, $genre, $costLevel, $travelMediumInfo);
-    $ok = mysqli_stmt_execute($stmt);
-    mysqli_stmt_close($stmt);
-    return $ok;
+/**
+ * Create a new post
+ */
+function createPost($pdo, $data) {
+    $stmt = $pdo->prepare("INSERT INTO posts (title, short_history, country, genre, cost_level, travel_medium_info, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())");
+    return $stmt->execute([
+        $data['title'],
+        $data['short_history'],
+        $data['country'],
+        $data['genre'],
+        $data['cost_level'],
+        $data['travel_medium_info']
+    ]);
 }
 
-function updatePost($conn, $id, $title = null, $shortHistory = null, $country = null, $genre = null, $costLevel = null, $travelMediumInfo = null, $status = null) {
+/**
+ * Update post
+ */
+function updatePost($pdo, $id, $data) {
     $fields = [];
-    $types = '';
-    $params = [];
+    $values = [];
     
-    if ($title !== null) {
+    if (!empty($data['title'])) {
         $fields[] = "title = ?";
-        $types .= 's';
-        $params[] = $title;
+        $values[] = $data['title'];
     }
-    if ($shortHistory !== null) {
+    if (!empty($data['short_history'])) {
         $fields[] = "short_history = ?";
-        $types .= 's';
-        $params[] = $shortHistory;
+        $values[] = $data['short_history'];
     }
-    if ($country !== null) {
+    if (!empty($data['country'])) {
         $fields[] = "country = ?";
-        $types .= 's';
-        $params[] = $country;
+        $values[] = $data['country'];
     }
-    if ($genre !== null) {
+    if (!empty($data['genre'])) {
         $fields[] = "genre = ?";
-        $types .= 's';
-        $params[] = $genre;
+        $values[] = $data['genre'];
     }
-    if ($costLevel !== null) {
+    if (!empty($data['cost_level'])) {
         $fields[] = "cost_level = ?";
-        $types .= 's';
-        $params[] = $costLevel;
+        $values[] = $data['cost_level'];
     }
-    if ($travelMediumInfo !== null) {
+    if (!empty($data['travel_medium_info'])) {
         $fields[] = "travel_medium_info = ?";
-        $types .= 's';
-        $params[] = $travelMediumInfo;
+        $values[] = $data['travel_medium_info'];
     }
-    if ($status !== null) {
+    if (!empty($data['status'])) {
         $fields[] = "status = ?";
-        $types .= 's';
-        $params[] = $status;
+        $values[] = $data['status'];
     }
     
     if (empty($fields)) {
         return true;
     }
     
-    $fields[] = "id = ?";
-    $types .= 'i';
-    $params[] = $id;
-    
+    $values[] = $id;
     $sql = "UPDATE posts SET " . implode(', ', $fields) . " WHERE id = ?";
-    $stmt = mysqli_prepare($conn, $sql);
-    
-    if (!empty($params)) {
-        mysqli_stmt_bind_param($stmt, $types, ...$params);
-    }
-    
-    $ok = mysqli_stmt_execute($stmt);
-    mysqli_stmt_close($stmt);
-    return $ok;
+    $stmt = $pdo->prepare($sql);
+    return $stmt->execute($values);
 }
 
-function deletePost($conn, $id) {
-    $stmt = mysqli_prepare($conn, "DELETE FROM posts WHERE id = ?");
-    mysqli_stmt_bind_param($stmt, 'i', $id);
-    $ok = mysqli_stmt_execute($stmt);
-    mysqli_stmt_close($stmt);
-    return $ok;
+/**
+ * Delete post
+ */
+function deletePost($pdo, $id) {
+    $stmt = $pdo->prepare("DELETE FROM posts WHERE id = ?");
+    return $stmt->execute([$id]);
 }
 
-function getAllPosts($conn) {
-    $result = mysqli_query($conn, "
-        SELECT p.*
-        FROM posts p
-        ORDER BY p.created_at DESC
-    ");
-    return mysqli_fetch_all($result, MYSQLI_ASSOC);
+/**
+ * Get all posts
+ */
+function getAllPosts($pdo) {
+    $stmt = $pdo->query("SELECT p.* FROM posts p ORDER BY p.created_at DESC");
+    return $stmt->fetchAll();
+}
+
+/**
+ * Get approved posts by scout ID
+ */
+function getApprovedPostsByScout($pdo, $scoutId) {
+    $stmt = $pdo->prepare("SELECT * FROM posts WHERE scout_id = ? AND status = 'approved' ORDER BY created_at DESC");
+    $stmt->execute([$scoutId]);
+    return $stmt->fetchAll();
 }
 ?>

@@ -72,4 +72,24 @@ function destroySession() {
 function needsVerification() {
     return isLoggedIn() && !isUserVerified();
 }
+
+/**
+ * Check if user is a verified scout
+ */
+function isVerifiedScout() {
+    return isLoggedIn() && 
+           $_SESSION['user_role'] === 'scout' && 
+           $_SESSION['user_is_verified'] == 1;
+}
+
+/**
+ * Scout access control middleware
+ * Redirects to home if not a verified scout
+ */
+function requireScoutAccess() {
+    if (!isVerifiedScout()) {
+        header('Location: index.php?page=home');
+        exit;
+    }
+}
 ?>

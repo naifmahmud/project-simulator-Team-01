@@ -16,11 +16,11 @@ require_once __DIR__ . '/../controllers/WishlistController.php';
 // Set content type
 header('Content-Type: application/json');
 
-// Get database connection
-$conn = getDbConnection();
-
 // Get request method
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+// Create controller instance
+$controller = new WishlistController();
 
 // Route based on method
 switch ($requestMethod) {
@@ -28,14 +28,14 @@ switch ($requestMethod) {
         // Add to wishlist
         $input = json_decode(file_get_contents('php://input'), true);
         $_POST['post_id'] = $input['post_id'] ?? 0;
-        handleAddToWishlist($conn);
+        $controller->addToWishlist();
         break;
         
     case 'DELETE':
         // Remove from wishlist
         $input = json_decode(file_get_contents('php://input'), true);
         $_POST['post_id'] = $input['post_id'] ?? 0;
-        handleRemoveFromWishlist($conn);
+        $controller->removeFromWishlist();
         break;
         
     default:
