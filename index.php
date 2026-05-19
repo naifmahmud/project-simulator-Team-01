@@ -1,55 +1,68 @@
 <?php
 session_start();
 
-// Load configuration
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/session.php';
-require_once __DIR__ . '/config/csrf.php';
+require 'config/database.php';
+require 'models/User.php';
+require 'models/Post.php';
+require 'models/PostRequest.php';
+require 'models/Comment.php';
+require 'controllers/AdminController.php';
 
-// Get page parameter
-$page = $_GET['page'] ?? 'scout-my-requests';
+$page    = $_GET['page']    ?? 'admin';
+$section = $_GET['section'] ?? '';
 
-// Handle scout create request page
-if ($page === 'scout-create-request') {
-    require_once __DIR__ . '/controllers/ScoutController.php';
-    $pdo = getDbConnection();
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        scoutCreateRequestProcessCtrl($pdo);
+if ($page === 'logout') {
+    $_SESSION = [];
+    session_destroy();
+    header('Location: index.php?page=admin');
+    exit;
+}
+
+if (empty($_SESSION['role'])) {
+    $check = mysqli_query($conn, "SELECT id, name, role FROM users WHERE role = 'admin' LIMIT 1");
+    if ($check && $row = mysqli_fetch_assoc($check)) {
+        $_SESSION['user_id']   = $row['id'];
+        $_SESSION['user_name'] = $row['name'];
+        $_SESSION['role']      = $row['role'];
+    }
+}
+
+if ($page !== 'logout' && ($_SESSION['role'] ?? '') !== 'admin') {
+    die('Access denied. Admin privileges required.');
+}
+
+if ($page === 'ajax') {
+    header('Content-Type: application/json');
+
+    $type = $_GET['type'] ?? '';
+    $q    = trim($_GET['q'] ?? '');
+
+    if ($type === 'users') {
+        echo json_encode($q === '' ? getUsers($conn, 100, 0) : searchUsers($conn, $q));
+    } elseif ($type === 'posts') {
+        echo json_encode($q === '' ? getApprovedPosts($conn) : searchPosts($conn, $q));
+    } elseif ($type === 'comments') {
+        echo json_encode($q === '' ? getComments($conn) : searchComments($conn, $q));
     } else {
-        scoutCreateRequestCtrl($pdo);
+        http_response_code(400);
+        echo json_encode(['error' => 'Unknown type']);
     }
     exit;
 }
 
-// Handle scout my requests page
-if ($page === 'scout-my-requests') {
-    require_once __DIR__ . '/controllers/ScoutController.php';
-    $pdo = getDbConnection();
-    scoutMyRequestsCtrl($pdo);
-    exit;
+switch ($page) {
+    case 'admin':
+        switch ($section) {
+            case 'users':    adminUsersCtrl($conn);     break;
+            case 'posts':    adminPostsCtrl($conn);     break;
+            case 'comments': adminCommentsCtrl($conn);  break;
+            default:         adminDashboardCtrl($conn); break;
+        }
+        break;
+
+    default:
+        header('Location: index.php?page=admin');
+        exit;
 }
 
-// Handle scout edit request page
-if ($page === 'scout-edit-request') {
-    require_once __DIR__ . '/controllers/ScoutController.php';
-    $pdo = getDbConnection();
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        scoutEditRequestProcessCtrl($pdo);
-    } else {
-        scoutEditRequestCtrl($pdo);
-    }
-    exit;
-}
-
-// Handle scout approved posts page
-if ($page === 'scout-approved-posts') {
-    require_once __DIR__ . '/controllers/ScoutController.php';
-    $pdo = getDbConnection();
-    scoutApprovedPostsCtrl($pdo);
-    exit;
-}
-
-// Default: redirect to scout my requests dashboard
-header('Location: index.php?page=scout-my-requests');
-exit;
-?>
+mysqli_close($conn);
