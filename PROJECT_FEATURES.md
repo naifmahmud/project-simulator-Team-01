@@ -1,4 +1,4 @@
-**Features**
+# Features
 *User Authentication: Secure login with password hashing and "Remember Me" functionality
 *Role-Based Access: Admin, Scout, and User roles with different permissions
 *Account Verification: Admin approval workflow for new accounts
