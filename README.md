@@ -1,6 +1,5 @@
-<<<<<<< HEAD
-"# Project Simulator" 
-=======
+## TRAVEL GUIDE" 
+
 # Travel Guide Web Application
 
 A modern PHP MVC web application for managing travel destinations, built with procedural mysqli and prepared statements for security.
@@ -154,7 +153,3 @@ gh pr create --title "Task 1: User Authentication & Wishlist" --body "Implementa
 - Session timeout is handled by PHP's default settings
 - Remember Me cookies expire after 30 days
 
-## License
-
-MIT License - Feel free to use this code for your projects.
->>>>>>> 73f5e6c (added the task 1 features.)
